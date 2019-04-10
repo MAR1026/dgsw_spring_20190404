@@ -12,4 +12,6 @@ public interface UserService {
     User updateUser(Long userid, User user);
     boolean deleteUser(Long userid);
     AttachmentProtocol uploadUserImage(Long userid, AttachmentProtocol fileName);
+
+    User login(User user);
 }

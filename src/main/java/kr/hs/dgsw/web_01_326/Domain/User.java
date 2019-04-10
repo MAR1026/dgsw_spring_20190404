@@ -20,6 +20,7 @@ public class User {
 
     private String username;
     private String email;
+    private String password;
     private String storedPath;
     private String originalName;
 
@@ -29,9 +30,12 @@ public class User {
     @UpdateTimestamp
     private  LocalDateTime modified;
 
-    public User(String username, String email) {
+    public User(String username, String email, String password, String storedPath, String originalName) {
         this.username = username;
         this.email = email;
+        this.password = password;
+        this.storedPath = storedPath;
+        this.originalName = originalName;
     }
 
 

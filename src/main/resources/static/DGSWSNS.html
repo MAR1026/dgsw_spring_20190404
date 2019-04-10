@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DGSW SNS</title>
+    <script src="http://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous">
+    </script>
+    <style>
+        #login-div {
+            display: flex; justify-content: center; align-items: center;
+            background-color: #000000aa;
+            position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+        }
+
+        #post-div {
+            display: flex; justify-content: center; align-items: center;
+            background-color: #000000aa;
+            position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+        }
+
+        .picture {
+            width: 40%;
+            height: auto;
+            margin: 15px 0px;
+            border-radius: 50%
+        }
+
+        button{
+            background:#1AAB8A;
+            color:#fff;
+            border:none;
+            position:relative;
+            height:60px;
+            font-size:1.6em;
+            padding:0 2em;
+            cursor:pointer;
+            transition:800ms ease all;
+            outline:none;
+        }
+        button:hover{
+            background:#fff;
+            color:#1AAB8A;
+        }
+        button:before,button:after{
+            content:'';
+            position:absolute;
+            top:0;
+            right:0;
+            height:2px;
+            width:0;
+            background: #1AAB8A;
+            transition:400ms ease all;
+        }
+        button:after{
+            right:inherit;
+            top:inherit;
+            left:0;
+            bottom:0;
+        }
+        button:hover:before,button:hover:after{
+            width:100%;
+            transition:800ms ease all;
+        }
+
+        input {
+             font-size:18px;
+             padding:10px 10px 10px 5px;
+             display:block;
+             width:300px;
+             border:none;
+             border-bottom:1px solid #757575;
+         }
+
+        input:focus {
+            outline:none;
+        }
+    </style>
+</head>
+<body>
+    <div id="list-container" style="float: left; width: 60%; text-align: center; border-right: 5px solid silver;">
+        <button onclick="addPost()" style="margin: 0 0 30px 0">새 글 추가</button>
+        <hr>
+        <div id="post-list" ></div>
+    </div>
+
+    <div id="user-container" style="float: right; width: 39%; text-align: center">
+        <div>프로필</div>
+        <div><button id="loginBtn" onclick="openLoginDialog()">로그인</button></div>
+        <div id="user-div">
+        </div>
+    </div>
+
+    <div id="post-container" style="display: none;">
+        <div id="post-div">
+            <div style="text-align: center; background: white; padding: 0 30px;">
+                <div style="margin: 30px 0">새 글 쓰기</div>
+                <div><input id="image" type="file"></div>
+                <div><input id="comment" placeholder="설명"></div>
+                <div style="margin: 30px 0">
+                    <button id="writeBtn" onclick="writePost()">작성</button>
+                    <button onclick="closePostDialog()">취소</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="login-container" style="display: none">
+        <div id="login-div">
+            <div style="text-align: center; background-color: white; padding: 0 30px;">
+                <div style="margin: 30px 0">로그인</div>
+                <div><input id="email" placeholder="사용자 아이디"></div>
+                <div><input id="password" placeholder="패스워드" type="password"></div>
+                <div style="margin: 30px 0">
+                    <button onclick="login()">확인</button>
+                    <button onclick="closeLoginDialog()">취소</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let user;
+        let editPostid = -1;
+
+        function openLoginDialog() {
+            $('#login-container').show(1000);
+        }
+
+        function closeLoginDialog() {
+            $('#login-container').hide(1000);
+
+            if(user) {
+                $('#loginBtn').hide();
+            }
+        }
+
+        function openPostDialog() {
+            $('#post-container').show(1000);
+        }
+
+        function closePostDialog() {
+            $('#image').val("");
+            $('#comment').val("");
+            $('#post-container').hide(1000);
+        }
+
+        function addPost() {
+            if(!user){
+                openLoginDialog();
+            } else {
+                openPostDialog();
+            }
+        }
+
+        async function writePost() {
+            let fileVal = $('#image');
+            let content = $('#comment').val();
+
+            if($("#writeBtn").text() === "수정") {
+                if(!fileVal[0].files.length && originalContent === content) {
+                    alert("사진 혹은 설명 중 하나는 수정해야 합니다!");
+                    return;
+                } else {
+                    try {
+                        let data = new Object();
+                        if(fileVal[0].files.length) {
+                            let fileInput = fileVal[0].files[0];
+                            let formData = new FormData();
+                            formData.append("srcFile", fileInput);
+                            let fileUpload = await $.ajax({
+                                                              type: 'POST',
+                                                              url: '/attachment',
+                                                              data: formData,
+                                                              contentType: false, // 'multipart/form-data'
+                                                              processData: false
+                                                          });
+                            data.storedPath = fileUpload.storedPath;
+                            data.originalName = fileUpload.originalName;
+                        }
+
+                        data.userId = user.id;
+                        data.content = content;
+                        let response = await $.ajax({
+                                                  url: `/modify/${editPostid}`,
+                                                  type: "put",
+                                                  contentType: "application/json",
+                                                  data: JSON.stringify(data)
+                                              });
+
+                        if(response === "") {
+                            throw "수정 실패";
+                        }
+
+                        let line = $(`#postLine${response.id}`);
+                        let time = new Date().getTime();
+                        let src = `/attachment/comment/${response.id}?time=${time}`;
+                        line.find('div:nth-child(1)').html("");
+                        line.find('div:nth-child(1)').html(`<img src=${src} class="picture">`);
+                        line.find('div:nth-child(2)').html(response.content);
+
+                        $("#writeBtn").text("작성");
+                        closePostDialog();
+                    } catch (e) {
+                        alert("게시글 수정에 실패하였습니다.");
+                        $("#writeBtn").text("작성");
+                        closePostDialog();
+                    }
+                }
+            } else {
+                if (!fileVal[0].files.length || !content) {
+                    alert("폼을 모두 채워주세요!");
+                    return;
+                } else {
+                    try {
+                        let fileInput = fileVal[0].files[0];
+                        let formData = new FormData();
+                        formData.append("srcFile", fileInput);
+                        let fileUpload = await $.ajax({
+                                                          type: 'POST',
+                                                          url: '/attachment',
+                                                          data: formData,
+                                                          contentType: false, // 'multipart/form-data'
+                                                          processData: false
+                                                      });
+
+                        let data = new Object();
+                        data.userId = user.id;
+                        data.content = content;
+                        data.storedPath = fileUpload.storedPath;
+                        data.originalName = fileUpload.originalName;
+
+                        let response = await $.ajax({
+                                                        url: '/write',
+                                                        type: 'post',
+                                                        contentType: 'application/json',
+                                                        data: JSON.stringify(data)
+                                                    });
+                        addPostLine($('#post-list'), response);
+                        closePostDialog();
+
+                    } catch (e) {
+                        alert("게시글 작성에 실패하였습니다.");
+                    }
+                }
+            }
+        }
+
+        let originalContent;
+        async function editPost(obj, id, username) {
+            if(!user){
+                openLoginDialog();
+            } else {
+                let line = $(`#postLine${id}`);
+                originalContent = $(line).find('div:nth-child(2)').html();
+                editPostid = id;
+                $("#writeBtn").text("수정");
+                $('#comment').val(originalContent);
+                openPostDialog();
+            }
+        }
+
+        async function deletePost(obj, id, username) {
+            if(!user) {
+                openLoginDialog();
+            } else {
+                if(user.username !== username){
+                    alert("본인이 작성한 글만 삭제할 수 있습니다!");
+                    return;
+                }
+                try {
+                    if(confirm("정말 삭제하시겠습니까?") === true) {
+                        let response = await $.ajax({
+                            type: "delete",
+                            url: `/remove/${id}`
+                                                    });
+                        if(response === true) {
+                            $(`#postLine${id}`).remove();
+                        }
+                        else
+                        {
+                            alert("삭제하지 못했습니다");
+                        }
+                    }
+                } catch (e) {
+                    console.log(JSON.stringify(e));
+                }
+            }
+        }
+
+        async function fetchPostList() {
+            try {
+                let response = await $.get('/list');
+                // $('#comments-list').html(JSON.stringify(response));
+                response.sort(function (a, b) {
+                    return a.created < b.created ? -1 : a.created > b.created ? 1 : 0;
+                })
+                for(let i = 0; i < response.length; i++) {
+                    let post = response[i];
+                    // ' 아니고 `(물결 표시 있는 곳)
+                    addPostLine($('#post-list'), post);
+                }
+            } catch (e) {
+                $('#post-list').html(JSON.stringify(e));
+            }
+        }
+
+        function addPostLine(target, obj) {
+            target.prepend(
+                `<div id="postLine${obj.id}" style="display: block; text-align: center; border-bottom: 1px solid silver">
+                    <div><img src="/attachment/comment/${obj.id}" class="picture"></div>
+                    <div>${obj.content}</div>
+                    <div>작성자 : ${obj.username}</div>
+                    <div>작성일 : ${obj.created}</div>
+                    <div style="margin: 15px 0">
+                        <button onclick="editPost(this, '${obj.id}', '${obj.username}')">수정</button>
+                        <button onclick="deletePost(this, '${obj.id}', '${obj.username}')">삭제</button>
+                    </div>
+                </div>`);
+        }
+
+
+        async function login() {
+            let email = $("#email").val();
+            let password = $("#password").val();
+
+            if(!email || !password) {
+                alert("로그인 폼을 모두 채워주세요!");
+                return;
+            } else {
+                try {
+                    let requestData = new Object();
+
+                    requestData.email = email;
+                    requestData.password = password;
+
+                    let response = await $.ajax({
+                        url: "/login",
+                        type: "post",
+                        contentType: "application/json",
+                        data: JSON.stringify(requestData)
+                        });
+
+                    if(response === "")
+                        throw "잘못된 아이디 혹은 패스워드";
+                    user = response;
+
+                    console.log(response.id);
+                    initUserInfo($("#user-div"), user);
+                    closeLoginDialog();
+                } catch (e) {
+                    alert("로그인에 실패하였습니다. 아이디와 비밀번호를 다시 확인해주세요.");
+                }
+
+            }
+        }
+
+        function initUserInfo(target, obj) {
+            target.append(`
+            <div id= userInfo${obj.id} style="display: block; text-align: center; border-bottom: 1px solid silver">
+                <div><img src="/attachment/user/${obj.id}" class="picture"></div>
+                <div>${obj.username}</div>
+                <div>${obj.email}</div>
+            </div>
+            `);
+        }
+
+        fetchPostList();
+    </script>
+</body>
+</html>

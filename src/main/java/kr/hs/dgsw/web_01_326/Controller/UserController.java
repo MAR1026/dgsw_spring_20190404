@@ -51,4 +51,9 @@ public class UserController {
     public AttachmentProtocol uploadProfile(@PathVariable Long userid, @RequestBody AttachmentProtocol srcFile){
         return this.userService.uploadUserImage(userid, srcFile);
     }
+
+    @PostMapping("/login")
+    public User login(@RequestBody User user){
+        return this.userService.login(user);
+    }
 }

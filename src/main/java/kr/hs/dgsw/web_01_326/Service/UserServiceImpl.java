@@ -78,5 +78,12 @@ public class UserServiceImpl implements UserService {
         return null;
     }
 
+    @Override
+    public User login(User user) {
+        Optional<User> found = this.userRepository.findByEmailAndPassword(user.getEmail(), user.getPassword());
+
+        return found.orElse(null);
+    }
+
 
 }

@@ -26,12 +26,12 @@ public class CommentServiceImpl implements CommentService
     private void init() {
         if( this.commentRepository.count() > 0) return;
 
-        User user1 = this.userRepository.save(new User("abc1", "abc1@dgsw"));
-        User user2 = this.userRepository.save(new User("abc2", "abc2@dgsw"));
-        User user3 = this.userRepository.save(new User("abc3", "abc3@dgsw"));
-        this.commentRepository.save(new Comment(user1.getId(), "Hi there111"));
-        this.commentRepository.save(new Comment(user2.getId(), "Hi there222"));
-        this.commentRepository.save(new Comment(user3.getId(), "Hi there333"));
+        User user1 = this.userRepository.save(new User("김준영", "1@dgsw.hs.kr", "1", "C:\\Users\\User\\IdeaProjects\\web_01_326\\upload\\2019\\04\\08\\9812a2b5-3ad4-47eb-ab08-ed0172b87c3c_caution.jpg", "caution.jpg"));
+        User user2 = this.userRepository.save(new User("김진철", "2@dgsw.hs.kr", "1", "C:\\Users\\User\\IdeaProjects\\web_01_326\\upload\\2019\\04\\08\\9812a2b5-3ad4-47eb-ab08-ed0172b87c3c_default.png", "default.jpg"));
+        User user3 = this.userRepository.save(new User("박근혜", "3@dgsw.hs.kr", "1", "C:\\Users\\User\\IdeaProjects\\web_01_326\\upload\\2019\\04\\08\\9812a2b5-3ad4-47eb-ab08-ed0172b87c3c_caution.jpg", "caution.jpg"));
+        this.commentRepository.save(new Comment(user1.getId(), "Hi there111", "C:\\Users\\User\\IdeaProjects\\web_01_326\\upload\\2019\\04\\08\\9812a2b5-3ad4-47eb-ab08-ed0172b87c3c_caution.jpg", "caution.jpg"));
+        this.commentRepository.save(new Comment(user2.getId(), "Hi there222", "C:\\Users\\User\\IdeaProjects\\web_01_326\\upload\\2019\\04\\08\\9812a2b5-3ad4-47eb-ab08-ed0172b87c3c_default.png", "default.jpg"));
+        this.commentRepository.save(new Comment(user3.getId(), "Hi there333", "C:\\Users\\User\\IdeaProjects\\web_01_326\\upload\\2019\\04\\08\\9812a2b5-3ad4-47eb-ab08-ed0172b87c3c_caution.jpg", "caution.jpg"));
     }
 
     @Override
@@ -59,9 +59,13 @@ public class CommentServiceImpl implements CommentService
 
     @Override
     public Comment modify(Long id, Comment comment) {
+        System.out.println(id);
         Comment found = searchComment(id);
         if(found != null) {
+            System.out.println(id +"찾았다");
             found.setContent(Optional.ofNullable(comment.getContent()).orElse(found.getContent()));
+            found.setStoredPath(Optional.ofNullable(comment.getStoredPath()).orElse(found.getStoredPath()));
+            found.setOriginalName(Optional.ofNullable(comment.getOriginalName()).orElse(found.getOriginalName()));
             this.commentRepository.save(found);
             return found;
         } else
